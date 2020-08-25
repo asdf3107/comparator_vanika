@@ -1,0 +1,222 @@
+unit Unit1;
+
+interface
+
+uses
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, shellApi,
+  Vcl.Menus, Vcl.ExtCtrls;
+
+type
+  TForm1 = class(TForm)
+    OpenDialog1: TOpenDialog;
+    ProgressBar1: TProgressBar;
+    ListBox1: TListBox;
+    ListBox2: TListBox;
+    MainMenu1: TMainMenu;
+    N1: TMenuItem;
+    N2: TMenuItem;
+    N3: TMenuItem;
+    N4: TMenuItem;
+    Panel1: TPanel;
+    Button1: TButton;
+    Edit1: TEdit;
+    Button2: TButton;
+    Edit2: TEdit;
+    Button3: TButton;
+    Button4: TButton;
+    Button5: TButton;
+    Splitter1: TSplitter;
+    procedure Button2Click(Sender: TObject);
+    procedure Button3Click(Sender: TObject);
+    procedure ListBox1DblClick(Sender: TObject);
+    procedure Button5Click(Sender: TObject);
+    procedure Button4Click(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
+    procedure N3Click(Sender: TObject);
+    procedure N4Click(Sender: TObject);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  Form1: TForm1;
+  strl1, strl2, strl3, strl4 : TStringList;
+  astrl : array [0..99] of TStringList;
+  tTime : TDateTime;
+  s1, s2 : boolean;
+
+implementation
+
+{$R *.dfm}
+
+uses Unit2;
+
+
+
+procedure TForm1.Button1Click(Sender: TObject);
+var F: TextFile;
+    V: String;
+begin
+
+  with OpenDialog1 do
+      if Execute then
+        begin
+          edit1.Text := FileName;
+          strl1 := TStringList.Create;
+          AssignFile(F, FileName);
+          Reset(F);
+          while (not EOF(F)) do
+            begin
+              Readln(F, V);
+              strl1.Add(V);
+            end;
+          s1 := true;
+          showmessage ('Файл 1 загружен');
+        end;
+
+end;
+
+procedure TForm1.Button2Click(Sender: TObject);
+var F: TextFile;
+    V: String;
+begin
+
+  with OpenDialog1 do
+      if Execute then
+        begin
+          edit2.Text := FileName;
+          strl2 := TStringList.Create;
+          strl2.Sorted := true;
+          AssignFile(F, FileName);
+          Reset(F);
+          while (not EOF(F)) do
+            begin
+              Readln(F, V);
+              strl2.Add(V);
+            end;
+          s2 := true;
+          showmessage ('Файл 2 загружен');
+        end;
+
+
+end;
+
+procedure TForm1.Button3Click(Sender: TObject);
+var
+  i: Integer;
+  n, j: Integer;
+
+begin
+  tTime := now;
+
+  if s1 = false then begin showmessage ('Нужно загрузить файл 1'); exit; end;
+  if s2 = false then begin showmessage ('Нужно загрузить файл 2'); exit; end;
+
+  listbox1.clear;
+  listbox2.clear;
+//  for I := 0 to 99 do astrl[i].Clear;
+
+
+  astrl [0] := TStringList.Create;
+  listbox1.Items.Add(strl1[0]);
+  n := listbox1.Items.count;
+
+  progressbar1.Max := strl1.Count;
+
+  for i := 0 to strl1.Count-1 do
+    begin
+      if pos ('CREATE TABLE ', strl1[i]) > 0 then
+        begin
+         astrl [listbox1.Items.count] := TStringList.Create;
+         listbox1.Items.Add(strl1[i]);
+         n := listbox1.Items.count;
+         application.ProcessMessages;
+        end;
+      progressbar1.Position := i;
+
+//      for j := 0 to strl2.Count-1 do
+//        begin
+//          if strl1[i] = strl2[j] then break;
+//        end;
+//
+//      if j = strl2.Count then astrl[n-1].Add(strl1[i]);
+
+      if strl2.IndexOf(strl1[i]) = -1 then astrl[n-1].Add(strl1[i]);
+
+
+
+
+    end;
+
+  for i := 0 to listbox1.Items.Count-1 do
+    begin
+      listbox1.Items[i] := inttostr (astrl[i].Count) + ' | ' + listbox1.Items[i];
+    end;
+
+  progressbar1.position := 0;
+  Showmessage (FormatDateTime( 'hh:nn:ss:zzz', Now - tTime ));
+
+end;
+
+procedure TForm1.Button4Click(Sender: TObject);
+begin
+  if listbox1.ItemIndex = -1 then exit;
+
+  astrl [listbox1.ItemIndex].SaveToFile('tmp.txt', TEncoding.UTF8);
+
+
+  ShellExecute(self.handle,'open', PChar(form2.Memo1.Lines[0]), 'tmp.txt', nil, SW_SHOWMAXIMIZED);
+end;
+
+procedure TForm1.Button5Click(Sender: TObject);
+var F: TextFile;
+    V: String;
+begin
+      s1 := true;
+      s2 := true;
+
+      strl1 := TStringList.Create;
+      AssignFile(F, 'c:/avanlog.ru_db_2020-08-12-13-06-45.sql');
+      Reset(F);
+      while (not EOF(F)) do
+        begin
+          Readln(F, V);
+          strl1.Add(V);
+        end;
+
+      strl2 := TStringList.Create;
+      strl2.Sorted := true;
+      AssignFile(F, 'c:/avanlog.ru_db_2020-08-25-09-27-03.sql');
+      Reset(F);
+      while (not EOF(F)) do
+        begin
+          Readln(F, V);
+          strl2.Add(V);
+        end;
+     beep;
+
+end;
+
+procedure TForm1.ListBox1DblClick(Sender: TObject);
+var
+ i, j : integer;
+ ad : boolean;
+begin
+  Listbox2.Clear;
+  listbox2.items := astrl [listbox1.ItemIndex];
+end;
+
+procedure TForm1.N3Click(Sender: TObject);
+begin
+ showmessage ('Вашпе бесплатная');
+end;
+
+procedure TForm1.N4Click(Sender: TObject);
+begin
+  Form2.Showmodal;
+end;
+
+end.
